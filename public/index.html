@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Video Compress App with Progress</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        max-width: 600px;
+        margin: auto;
+        padding: 2rem;
+      }
+      label,
+      input,
+      select,
+      button {
+        display: block;
+        margin: 1rem 0;
+      }
+      #progressBar {
+        width: 100%;
+        background: #eee;
+        height: 25px;
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      #progressBar div {
+        height: 100%;
+        background: #4caf50;
+        width: 0;
+        transition: width 0.3s ease;
+        text-align: center;
+        color: white;
+        line-height: 25px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Video Compress App with Progress</h1>
+    <form id="uploadForm">
+      <label>Upload Video: <input type="file" name="video" required /></label>
+      <label
+        >Format Output:
+        <select name="format">
+          <option value="mp4">MP4 (H.264)</option>
+          <option value="webm">WebM (VP9)</option>
+          <option value="mov">MOV (QuickTime)</option>
+          <option value="avi">AVI (MPEG4)</option>
+        </select>
+      </label>
+      <label
+        >Compress Berapa %?
+        <input
+          type="number"
+          name="percent"
+          value="50"
+          min="10"
+          max="100"
+          required
+      /></label>
+      <button type="submit">Upload & Compress</button>
+    </form>
+
+    <div id="progressBar" style="display: none">
+      <div>0%</div>
+    </div>
+
+    <div id="result"></div>
+
+    <script>
+      const progressBar = document.getElementById("progressBar");
+      const progressFill = progressBar.querySelector("div");
+      const resultDiv = document.getElementById("result");
+
+      const evtSource = new EventSource("/progress");
+
+      evtSource.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        if (data.progress) {
+          progressBar.style.display = "block";
+          progressFill.style.width = data.progress + "%";
+          progressFill.textContent = data.progress + "%";
+        }
+        if (data.done) {
+          progressFill.style.width = "100%";
+          progressFill.textContent = "100% Completed";
+          resultDiv.innerHTML = `
+          <p>✅ Download: <a href="${data.download}" download>Download Here</a></p>
+          <p>Original Size: ${data.originalSize}</p>
+          <p>Compressed Size: ${data.compressedSize}</p>
+        `;
+        }
+      };
+
+      document
+        .getElementById("uploadForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+          progressBar.style.display = "none";
+          resultDiv.textContent = "";
+          progressFill.style.width = "0%";
+          progressFill.textContent = "0%";
+
+          const formData = new FormData(e.target);
+          await fetch("/upload", { method: "POST", body: formData });
+        });
+    </script>
+  </body>
+</html>
