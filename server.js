@@ -80,6 +80,28 @@ app.post("/upload", upload.single("video"), (req, res) => {
         "-y",
       ];
 
+      // remove background
+      // const ffmpegArgs = [
+      //   "-i",
+      //   inputPath,
+      //   "-f",
+      //   "lavfi",
+      //   "-i",
+      //   `color=c=blue:s=1280x720`,
+      //   "-filter_complex",
+      //   "[0:v]chromakey=0x00FF00:0.2:0.0[fg];[1:v][fg]overlay=format=auto",
+      //   "-c:v",
+      //   codec,
+      //   "-b:v",
+      //   `${targetBitrateKbps}k`,
+      //   "-c:a",
+      //   "aac",
+      //   "-strict",
+      //   "-2",
+      //   outputPath,
+      //   "-y",
+      // ];
+
       const ffmpeg = spawn("ffmpeg", ffmpegArgs);
 
       ffmpeg.stderr.setEncoding("utf8");
