@@ -10,7 +10,10 @@ const PORT = 3000;
 app.use(express.static("public"));
 app.use("/uploads", express.static("uploads"));
 
-const upload = multer({ dest: "uploads/" });
+const upload = multer({
+  dest: "uploads/",
+  limits: { fileSize: 500 * 1024 * 1024 },
+});
 
 let clients = [];
 
