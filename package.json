@@ -10,7 +10,9 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "archiver": "^7.0.1",
     "express": "^5.1.0",
-    "multer": "^2.0.0"
+    "multer": "^2.0.0",
+    "p-limit": "3"
   }
 }

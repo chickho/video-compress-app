@@ -39,7 +39,9 @@
   <body>
     <h1>Video Compress App with Progress</h1>
     <form id="uploadForm">
-      <label>Upload Video: <input type="file" name="video" required /></label>
+      <label
+        >Upload Video: <input type="file" name="video" multiple required
+      /></label>
       <label
         >Format Output:
         <select name="format">
@@ -68,28 +70,55 @@
 
     <div id="result"></div>
 
-    <script>
-      const progressBar = document.getElementById("progressBar");
-      const progressFill = progressBar.querySelector("div");
-      const resultDiv = document.getElementById("result");
+    <div id="progressContainer"></div>
 
+    <script>
+      const progressContainer = document.getElementById("progressContainer");
+      const resultDiv = document.getElementById("result");
       const evtSource = new EventSource("/progress");
+
+      const progressBars = {};
 
       evtSource.onmessage = (event) => {
         const data = JSON.parse(event.data);
-        if (data.progress) {
-          progressBar.style.display = "block";
-          progressFill.style.width = data.progress + "%";
-          progressFill.textContent = data.progress + "%";
+        const key = data.fileIndex + "-" + data.fileName;
+
+        // Jika ZIP, tampilkan tombol khusus dan skip progress bar
+        if (data.isZip) {
+          const zipLink = document.createElement("p");
+          zipLink.innerHTML = `📦 <strong><a href="${data.download}" download>Download Semua Video (ZIP)</a></strong>`;
+          resultDiv.appendChild(zipLink);
+          return;
         }
+
+        // Buat progress bar baru jika belum ada
+        if (!progressBars[key]) {
+          const bar = document.createElement("div");
+          bar.style.margin = "1rem 0";
+          bar.innerHTML = `
+        <strong>${data.fileName}</strong>
+        <div style="width:100%;background:#eee;height:25px;border-radius:5px;overflow:hidden;margin-top:5px;">
+          <div style="height:100%;background:#4caf50;width:0%;text-align:center;color:white;line-height:25px;"></div>
+        </div>
+      `;
+          progressContainer.appendChild(bar);
+          progressBars[key] = bar.querySelector("div > div");
+        }
+
+        // Update progress bar
+        if (data.progress) {
+          const barFill = progressBars[key];
+          barFill.style.width = `${data.progress}%`;
+          barFill.textContent = `${data.progress}%`;
+        }
+
+        // Setelah selesai, tampilkan link download per file
         if (data.done) {
-          progressFill.style.width = "100%";
-          progressFill.textContent = "100% Completed";
-          resultDiv.innerHTML = `
-          <p>✅ Download: <a href="${data.download}" download>Download Here</a></p>
-          <p>Original Size: ${data.originalSize}</p>
-          <p>Compressed Size: ${data.compressedSize}</p>
-        `;
+          progressBars[key].style.width = `100%`;
+          progressBars[key].textContent = `100% Completed`;
+          const link = document.createElement("p");
+          link.innerHTML = `✅ <a href="${data.download}" download>Download ${data.fileName}</a> (Original: ${data.originalSize}, Compressed: ${data.compressedSize})`;
+          resultDiv.appendChild(link);
         }
       };
 
@@ -97,10 +126,9 @@
         .getElementById("uploadForm")
         .addEventListener("submit", async (e) => {
           e.preventDefault();
-          progressBar.style.display = "none";
+          progressContainer.innerHTML = "";
           resultDiv.textContent = "";
-          progressFill.style.width = "0%";
-          progressFill.textContent = "0%";
+          Object.keys(progressBars).forEach((key) => delete progressBars[key]);
 
           const formData = new FormData(e.target);
           await fetch("/upload", { method: "POST", body: formData });
